@@ -1,0 +1,33 @@
+trigger:
+  - main
+pool:
+  vmImage: 'ubuntu-latest'
+
+stages:
+  - stage: Build
+    jobs:
+      - job: Build
+        steps:
+          - task: Docker@2
+            inputs:
+              containerRegistry: 'ACRConnection'
+              repository: 'sample-app'
+              command: 'buildAndPush'
+              Dockerfile: '**/Dockerfile'
+              tags: 'v1'
+
+  - stage: Deploy
+    dependsOn: Build
+    jobs:
+      - job: Deploy
+        steps:
+        - task: Kubernetes@1
+          inputs:
+            connectionType: 'Kubernetes Service Connection'
+            kubernetesServiceEndpoint: 'AKSConnection'
+            namespace: 'default'
+            command: 'apply'
+            useConfigurationFile: true
+            configuration: 'aks.yml'
+            secretType: 'dockerRegistry'
+            containerRegistryType: 'Azure Container Registry'
