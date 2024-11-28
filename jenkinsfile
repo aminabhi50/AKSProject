@@ -1,0 +1,36 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Git Checkout Stage') {
+            steps {
+                checkout scmGit(branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/aminabhi50/AKSProject.git']])
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                bat 'docker build -t pracrdemo.azurecr.io/sample-app:v1 .'
+                bat 'docker push pracrdemo.azurecr.io/sample-app:v1'
+            }
+        }
+
+        stage('Deploy to AKS') {
+            steps {
+                bat 'kubectl apply -f aks.yml'
+            }
+        }
+    }
+    
+    post {
+        failure {
+            echo "Jenkins Build Failed"
+        }
+        success {
+            echo "Jenkins Build Success"
+        }
+        always {
+            cleanWs()
+        }
+    }
+}
